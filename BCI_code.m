@@ -1,66 +1,75 @@
 %% Obtain Left/Right Class Data
-num = 2;
+num = 1;
+originalData = ALLEEG(num).data;
+icaWeights = ALLEEG(num).icaweights;
+icaSphere = ALLEEG(num).icasphere;
+icaInv = ALLEEG(num).icawinv;
 
-leftData = ALLEEG(num).data;
+icaDataUse = icaWeights * icaSphere * originalData;
+icaDataUse = icaDataUse';
 
-icawLeft = ALLEEG(num).icaweights;
-icasp = ALLEEG(num).icasphere;
-wLeft = icawLeft * icasp;
-
-leftData_1 = leftData(1,:);
-leftData_1 = leftData_1';
+originalData = originalData';
 
 sampleMatrix = [];
-val = 0;
-for i = 1:size(leftData,1)
-    for j = 1:size(leftData,2)
-        data = leftData(i,j);
-        sampleMatrix = [sampleMatrix; data];
-        
-        if isequal(size(sampleMatrix,1), 501)
-            emdData = emd(sampleMatrix);
-            hht(emdData, 250);
-            saveas(gcf, ['right' num2str(val) '.jpg'])
-            sampleMatrix = [];
-            val = val + 1;
+val = 1;
+
+startRow = 1;
+endRow = 501;
+
+for k = 1:72
+    for j = 1:size(icaDataUse,2)
+        for i = startRow:endRow
+            dataValue = icaDataUse(i,j);
+            sampleMatrix = [sampleMatrix; dataValue];
+            
+            if isequal(size(sampleMatrix,1), 501)
+                emdData = emd(sampleMatrix);
+                hht(emdData, 250);
+                saveas(gcf, ['left' num2str(val) '.jpg'])
+                sampleMatrix = [];
+                val = val + 1;
+            end
+            
         end
-        
     end
+    
+    startRow = startRow + 501;
+    endRow = endRow + 501;
+    myImages = cell(1,10);
+    for z = 1:22
+        myImages{z} = imread(['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\left\left' num2str(z) '.jpg']);
+    end
+    
+    montage(myImages);
+    
+    saveas(gcf, ['leftCNN_' num2str(k) '.jpg'])
+    val = 1;
 end
 
-% [leftData_1_imf, leftData_1_residual, leftData_1_info]  = emd(leftData_1);
-% 
-% figure(1)
-% hht(leftData_1_imf, 250)
-% 
-% figure(2)
-% hht(leftData_1_imf, 13)
-% 
-% plot(leftData_1(1:500, 1))
-
 %% Setup Image Dimensions
-
+dim = [150 150];
 % left
-for i = 0:1583
-    imgleft = imread(['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\leftImages\left' num2str(i) '.jpg']);
-    imgrightResize = imresize(imgleft, [50 30]);
-    imwrite(imgrightResize, ['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\leftNew\left' num2str(i) '.jpg']);
+for i = 1:72
+    imgleft = imread(['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\CNN_Images\leftCNN\leftCNN_' num2str(i) '.jpg']);
+    imgrightResize = imresize(imgleft, dim);
+    imwrite(imgrightResize, ['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\training\leftCNN\left' num2str(i) '.jpg']);
 end
 
 % right
-for i = 0:1583
-    imgright = imread(['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\rightImages\right' num2str(i) '.jpg']);
-    imgrightResize = imresize(imgright, [50 30]);
-    imwrite(imgrightResize, ['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\rightNew\right' num2str(i) '.jpg']);
+for i = 1:72
+    imgright = imread(['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\CNN_Images\rightCNN\rightCNN_' num2str(i) '.jpg']);
+    imgrightResize = imresize(imgright, dim);
+    imwrite(imgrightResize, ['C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\training\rightCNN\right' num2str(i) '.jpg']);
 end
+
 %% Convolutional Neural Network
 
-data = imageDatastore('C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\CNN_Images', ...
+dataValue = imageDatastore('C:\Users\marti\Desktop\University\Neural Networks & Fuzzy Logic\Images\alpha\training', ...
     'IncludeSubfolders', true, 'labelsource', 'foldernames');
 numTrainFiles = 0.7;
-[dataTrain, dataValidation] = splitEachLabel(data, numTrainFiles);
+[dataTrain, dataValidation] = splitEachLabel(dataValue, numTrainFiles);
 layers = [
-    imageInputLayer([50 30 3])
+    imageInputLayer([dim 3])
     
     convolution2dLayer(5, 24, 'Stride', 1,'Padding', 2)
     batchNormalizationLayer 
